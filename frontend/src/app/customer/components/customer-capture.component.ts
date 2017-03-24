@@ -1,86 +1,102 @@
-import {Component, Output, OnInit, EventEmitter, Input, DoCheck} from "@angular/core";
+import {Component, Output, OnInit, EventEmitter} from "@angular/core";
 import {FormGroup, FormBuilder, Validators} from "@angular/forms";
-import {Address} from "../api/datastructures/address.datastructure";
-import {CustomerResource} from "../api/resources/customer.resource";
-import {EditorMode} from "../../common/ui/enums/editor-mode.enum";
-import {SaveCustomerEvent} from "./events/save-customer.event";
+import {CustomerService} from "../../customer/api/customer.service";
+import {CustomerResource} from "../../customer/api/resources/customer.resource";
+import {Router} from "@angular/router";
 
 @Component({
-    selector: "educama-customer-capture",
-    templateUrl: "customer-capture.component.html",
+    selector: "educama-shipment-capture",
+    templateUrl: "./shipment-capture.component.html"
 })
-export class CustomerCaptureComponent implements OnInit, DoCheck {
-
-    @Input()
-    public customer: CustomerResource;
+export class ShipmentCaptureComponent implements OnInit {
 
     @Output()
-    public saveCustomerEvent: EventEmitter<SaveCustomerEvent> = new EventEmitter<SaveCustomerEvent>();
+    public createShipmentEvent: EventEmitter<CreateShipmentEvent> = new EventEmitter<CreateShipmentEvent>();
 
     @Output()
-    public saveCustomerCancellationEvent = new EventEmitter();
+    public createShipmentCancellationEvent = new EventEmitter();
 
-    public customerCaptureForm: FormGroup;
-    public editorMode: EditorMode;
+    public shipmentCaptureForm: FormGroup;
+    public customerSuggestions: CustomerResource[];
 
-    private _isInitialized:boolean = false;
+    public senderStreet: string;
+    public senderStreetNo: string;
+    public senderZipCode: string;
+    public senderCity: string;
 
-    constructor(private _formBuilder: FormBuilder) {
+    public receiverStreet: string;
+    public receiverStreetNo: string;
+    public receiverZipCode: string;
+    public receiverCity: string;
+
+
+    constructor(private _formBuilder: FormBuilder,
+                private _customerService: CustomerService,
+                private _router: Router) {
     }
 
     public ngOnInit() {
+        this.shipmentCaptureForm = this._formBuilder.group({
+            sender: ["", [Validators.required]],
+            receiver: ["", [Validators.required]]
 
-        this.customerCaptureForm = this._formBuilder.group({
-            uuid: ["", []],
-            name: ["", [Validators.required]],
-            street: ["", [Validators.required]],
-            housenumber: ["", [Validators.required]],
-            postalcode: ["", [Validators.required]],
-            city: ["", [Validators.required]]
         });
-
-        // Disable the uuid form field
-        this.customerCaptureForm.get("uuid").disable(true);
-
-    }
-
-    public ngDoCheck() {
-
-        // Determine editor mode based on existence of a passed in customer
-        this.editorMode = this.customer ? EditorMode.update : EditorMode.create;
-
-        if (this.editorMode === EditorMode.update && !this._isInitialized) {
-            this.customerCaptureForm.get("uuid").setValue(this.customer.uuid);
-            this.customerCaptureForm.get("name").setValue(this.customer.name);
-            this.customerCaptureForm.get("street").setValue(this.customer.address.street);
-            this.customerCaptureForm.get("housenumber").setValue(this.customer.address.streetNo);
-            this.customerCaptureForm.get("postalcode").setValue(this.customer.address.zipCode);
-            this.customerCaptureForm.get("city").setValue(this.customer.address.city);
-            this._isInitialized = true;
-        }
     }
 
     // ***************************************************
     // Event Handler
     // ***************************************************
 
-    public cancel() {
-        this.customerCaptureForm.reset();
-        this.saveCustomerCancellationEvent.emit(null);
+    public loadUserSuggestions(event:Event){
+        this._customerService.findCustomerSuggestions(event.query)
+            .subscribe(customerSuggestionResource => this.customerSuggestions = customerSuggestionResource.customers);
     }
 
-    public createCustomer() {
-        this.saveCustomerEvent.emit(
-            new SaveCustomerEvent(
-                this.customerCaptureForm.get("name").value,
-                new Address(
-                    this.customerCaptureForm.get("street").value,
-                    this.customerCaptureForm.get("housenumber").value,
-                    this.customerCaptureForm.get("postalcode").value,
-                    this.customerCaptureForm.get("city").value
-                ),
-                this.customerCaptureForm.get("uuid").value
+    public createNewCustomer(){
+        this._router.navigate(["/customers/capture"]);
+    }
+
+    public onReceiverSelected(receiver: CustomerResource){
+
+        this.receiverStreet = receiver.address.street;
+        this.receiverStreetNo = receiver.address.streetNo;
+        this.receiverZipCode = receiver.address.zipCode;
+        this.receiverCity = receiver.address.city;
+
+    }
+
+    public onSenderSelected(sender: CustomerResource){
+
+        this.senderStreet = sender.address.street;
+        this.senderStreetNo = sender.address.streetNo;
+        this.senderZipCode = sender.address.zipCode;
+        this.senderCity = sender.address.city;
+    }
+
+
+
+    public cancel() {
+        this.shipmentCaptureForm.reset();
+        this.createShipmentCancellationEvent.emit(null);
+    }
+
+    public createShipment() {
+        // TODO:
+        this.createShipmentEvent.emit(
+            new CreateShipmentEvent(
+                this.shipmentCaptureForm.get("customer").value,null, null
             )
         )
+    }
+}
+export class CreateShipmentEvent {
+    customer: string;
+    senderAddress: string;
+    receiverAddress: string
+
+    constructor(customer: string, senderAddress: string, receiverAddress: string) {
+        this.customer = customer;
+        this.senderAddress = senderAddress;
+        this.receiverAddress = receiverAddress;
     }
 }

@@ -14,7 +14,7 @@ const SHIPMENT_ROUTES: Routes = [
     },
     {
         path: "shipments/capture",
-        component: ShipmentCapturePageComponent
+        component: ShipmentCaptureComponent
     },
     {
         path: "tasks",
