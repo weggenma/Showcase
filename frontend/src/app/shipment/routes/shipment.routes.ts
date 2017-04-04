@@ -1,7 +1,6 @@
 import {Routes, RouterModule} from "@angular/router";
 import {ShipmentListPageComponent} from "../container/shipment-list-page.component";
 import {ShipmentCaptureComponent} from "../components/shipment-capture.component";
-import {ShipmentCapturePageComponent} from "../container/shipment-capture-page.component";
 import {TaskListPageComponent} from "../container/task-list-page.component";
 
 /*
